@@ -181,5 +181,11 @@ Infura API key fetched from https://rpc.info (Same one with Metamask)
             "url": "tornadov2-relayer-eth.herokuapp"
             "name": "tornadov2-relayer-eth.herokuapp",
             "cachedUrl": "https://tornadov2-relayer-eth.herokuapp.com"
+        
+         "0xproxy.bsc": {
+            "url": "tornadov2-relayer-bsc.herokuapp"
+            "name": "tornadov2-relayer-bsc.herokuapp"",
+            "cachedUrl": "https://tornadov2-relayer-bsc.herokuapp.com"
+            
 }
 ```

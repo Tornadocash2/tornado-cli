@@ -21,7 +21,7 @@ $ git clone https://github.com/Tornadocash2/tornado-cli.git
 
 Or, download the archive file from github
 
-https://development.tornadocash.community/tornadocash/tornado-cli/archive/refs/heads/master.zip
+https://github.com/Tornadocash2/tornado-cli/archive/refs/heads/master.zip
 
 After downloading or cloning the repository, you must install necessary libraries using the following command.
 

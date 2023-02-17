@@ -1,4 +1,4 @@
-# Tornado-CLI
+# Tornado Cash v2-CLI
 
 Command line tool to interact with [Tornado Cash v2](https://tornadocash2.com).
 

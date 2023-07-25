@@ -341,7 +341,7 @@ async function deposit({ currency, amount, commitmentNote }) {
     // a token
     await printERC20Balance({ address: tornadoContract._address, name: 'Tornado contract' });
     await printERC20Balance({ address: senderAccount, name: 'Sender account' });
-    const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`]['tokens'][currency].decimals;
+    const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
     const tokenAmount = isTestRPC ? TOKEN_AMOUNT : fromDecimals({ amount, decimals });
     if (isTestRPC) {
       console.log('Minting some test tokens to deposit');
@@ -483,7 +483,7 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
 
     const gasPrice = await fetchGasPrice();
 
-    const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`]['tokens'][currency].decimals;
+    const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
     // const fee = calculateFee({
     //   currency,
     //   gasPrice,
@@ -1333,7 +1333,7 @@ async function loadWithdrawalData({ amount, currency, deposit }) {
     if (!withdrawEvent) return null;
 
     const fee = withdrawEvent.fee;
-    const decimals = config.deployments[`netId${netId}`]['tokens'][currency].decimals;
+    const decimals = config.deployments[`netId${netId}`][currency].decimals;
     const withdrawalAmount = toBN(fromDecimals({ amount, decimals })).sub(toBN(fee));
     const { timestamp } = await web3.eth.getBlock(withdrawEvent.blockNumber);
     return {
@@ -1425,9 +1425,9 @@ async function init({ rpc, noteNetId, currency = 'dai', amount = '100', balanceC
 
   if (!isIpPrivate && !rpc.includes('localhost') && !privateRpc) {
     try {
-      const htmlIPInfo = await axios.get('https://check.torproject.org', ipOptions);
-      const ip = htmlIPInfo.data.split('Your IP address appears to be:  <strong>').pop().split('</')[0];
-      console.log('Your remote IP address is', ip);
+      // const htmlIPInfo = await axios.get('https://check.torproject.org', ipOptions);
+      // const ip = htmlIPInfo.data.split('Your IP address appears to be:  <strong>').pop().split('</')[0];
+      console.log('Your remote IP address is');
     } catch (error) {
       console.error('Could not fetch remote IP from check.torproject.org, use VPN if the problem repeats.');
     }
@@ -1493,14 +1493,15 @@ async function init({ rpc, noteNetId, currency = 'dai', amount = '100', balanceC
       tornadoAddress = config.deployments[`netId${netId}`].proxy;
       multiCall = config.deployments[`netId${netId}`].multicall;
       subgraph = config.deployments[`netId${netId}`].subgraph;
-      tornadoInstance = config.deployments[`netId${netId}`]['tokens'][currency].instanceAddress[amount];
-      deployedBlockNumber = config.deployments[`netId${netId}`]['tokens'][currency].deployedBlockNumber[amount];
-
+      tornadoInstance = config.deployments[`netId${netId}`][currency].instanceAddress[amount];
+      console.log('debug->4')
+      deployedBlockNumber = config.deployments[`netId${netId}`][currency].deployedBlockNumber[amount];
+      console.log('debug->5')
       if (!tornadoAddress) {
         throw new Error();
       }
       tokenAddress =
-        currency !== netSymbol.toLowerCase() ? config.deployments[`netId${netId}`]['tokens'][currency].tokenAddress : null;
+        currency !== netSymbol.toLowerCase() ? config.deployments[`netId${netId}`][currency].tokenAddress : null;
     } catch (e) {
       console.error('There is no such tornado instance, check the currency and amount you provide', e);
       process.exit(1);

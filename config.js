@@ -211,7 +211,7 @@ module.exports = {
                     '100': 23051956
                 },
                 'miningEnabled': false,
-                'symbol': 'BNB',
+                'symbol': 'BUSD',
                 'decimals': 18
             },
             'storm': {

@@ -1,6 +1,6 @@
 # Tornado-CLI
 
-Command line tool to interact with [Tornado Cash](https://tornadocash2.com).
+Command line tool to interact with [Tornado Cash v2](https://tornadocash2.com).
 
 ### How to install tornado cli
 Download and install [node.js](https://nodejs.org/en/download/).

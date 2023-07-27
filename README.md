@@ -1,9 +1,6 @@
 # Tornado-CLI
 
-Command line tool to interact with [Tornado Cash](https://tornado.ws).
-
-### Warning!
-Current cli version doesn't support [Anonymity Mining](https://tornado-cash.medium.com/tornado-cash-governance-proposal-a55c5c7d0703)
+Command line tool to interact with [Tornado Cash](https://tornadocash2.com).
 
 ### How to install tornado cli
 Download and install [node.js](https://nodejs.org/en/download/).

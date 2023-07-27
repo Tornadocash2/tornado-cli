@@ -125,7 +125,6 @@ function computeDepositEventsTree(depositEvents) {
 
   console.log('Computing deposit events merkle tree and its root');
   const tree = new merkleTree(MERKLE_TREE_HEIGHT, leaves);
-
   return { leaves, tree, root: tree.root() };
 }
 
@@ -376,9 +375,9 @@ async function generateMerkleProof(deposit, currency, amount) {
   // Get all deposit events from smart contract and assemble merkle tree from them
   const cachedEvents = await fetchEvents({ type: 'deposit', currency, amount });
   const { tree, leaves, root } = computeDepositEventsTree(cachedEvents);
-
   // Validate that merkle tree is valid, deposit data is correct and note not spent.
   const leafIndex = leaves.findIndex((commitment) => toBN(deposit.commitmentHex).toString(10) === commitment);
+  console.log('debug->leafIndex', leafIndex)
   let isValidRoot, isSpent;
   if (!isTestRPC && !multiCall) {
     const callContract = await useMultiCall([
@@ -484,21 +483,21 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
     const gasPrice = await fetchGasPrice();
 
     const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
-    // const fee = calculateFee({
-    //   currency,
-    //   gasPrice,
-    //   amount,
-    //   refund,
-    //   ethPrices,
-    //   relayerServiceFee: tornadoServiceFee,
-    //   decimals
-    // });
-    let fee
-    if (currency === 'hex') {
-      fee = BigInt(amount * 2 * 10 ** 6)
-    } else {
-      fee = BigInt(amount * 2 * 10 ** 16)
-    }
+    const fee = calculateFee({
+      currency,
+      gasPrice,
+      amount,
+      refund,
+      ethPrices,
+      relayerServiceFee: tornadoServiceFee,
+      decimals
+    });
+    // let fee
+    // if (currency === 'hex') {
+    //   fee = BigInt(amount * 2 * 10 ** 6)
+    // } else {
+    //   fee = BigInt(amount * 2 * 10 ** 16)
+    // }
     if (fee.gt(fromDecimals({ amount, decimals }))) {
       throw new Error('Too high refund');
     }
@@ -518,6 +517,7 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
     const gasCosts = toBN(gasPrice).mul(toBN(340000));
     const totalCosts = fee.add(gasCosts);
 
+    console.log('debug->gasCosts', gasCosts, fee, totalCosts)
     /** Relayer fee details **/
     console.log('Transaction fee: ', rmDecimalBN(fromWei(gasCosts), 12), `${netSymbol}`);
     console.log('Relayer fee: ', rmDecimalBN(fromWei(fee), 12), `${netSymbol}`);
@@ -1494,9 +1494,7 @@ async function init({ rpc, noteNetId, currency = 'dai', amount = '100', balanceC
       multiCall = config.deployments[`netId${netId}`].multicall;
       subgraph = config.deployments[`netId${netId}`].subgraph;
       tornadoInstance = config.deployments[`netId${netId}`][currency].instanceAddress[amount];
-      console.log('debug->4')
       deployedBlockNumber = config.deployments[`netId${netId}`][currency].deployedBlockNumber[amount];
-      console.log('debug->5')
       if (!tornadoAddress) {
         throw new Error();
       }

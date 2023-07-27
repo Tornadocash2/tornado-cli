@@ -19,9 +19,7 @@ If you have git installed on your system, clone the master branch.
 $ git clone https://git.tornado.ws/tornadocash/tornado-cli
 ```
 
-Or, download the archive file from git: https://git.tornado.ws/tornadocash/tornado-cli/archive/master.zip
-
-After downloading or cloning the repository, you must install necessary libraries using the following command.
+After cloning the repository, you must install necessary libraries using the following command.
 
 ```bash
 $ cd tornado-cli

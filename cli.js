@@ -26,26 +26,26 @@ const prompt = readline.createInterface({ input: process.stdin, output: process.
 const gasSpeedPreferences = ['instant', 'fast', 'standard', 'low'];
 
 let web3,
-  torPort,
-  tornado,
-  tornadoContract,
-  tornadoInstance,
-  circuit,
-  proving_key,
-  groth16,
-  erc20,
-  senderAccount,
-  netId,
-  netName,
-  netSymbol,
-  multiCall,
-  subgraph;
+    torPort,
+    tornado,
+    tornadoContract,
+    tornadoInstance,
+    circuit,
+    proving_key,
+    groth16,
+    erc20,
+    senderAccount,
+    netId,
+    netName,
+    netSymbol,
+    multiCall,
+    subgraph;
 let MERKLE_TREE_HEIGHT, ETH_AMOUNT, TOKEN_AMOUNT, PRIVATE_KEY;
 
 /** Command state parameters */
 let preferenceSpeed = gasSpeedPreferences[0];
 let isTestRPC,
-  eipGasSupport = false;
+    eipGasSupport = false;
 let shouldPromptConfirmation = true;
 let doNotSubmitTx, privateRpc;
 /** ----------------------------------------- **/
@@ -58,56 +58,56 @@ const pedersenHash = (data) => circomlib.babyJub.unpackPoint(circomlib.pedersenH
 
 /** BigNumber to hex string of specified length */
 function toHex(number, length = 32) {
-  const str = number instanceof Buffer ? number.toString('hex') : bigInt(number).toString(16);
-  return '0x' + str.padStart(length * 2, '0');
+    const str = number instanceof Buffer ? number.toString('hex') : bigInt(number).toString(16);
+    return '0x' + str.padStart(length * 2, '0');
 }
 
 /** Remove Decimal without rounding with BigNumber */
 function rmDecimalBN(bigNum, decimals = 6) {
-  return new BigNumber(bigNum)
-    .times(BigNumber(10).pow(decimals))
-    .integerValue(BigNumber.ROUND_DOWN)
-    .div(BigNumber(10).pow(decimals))
-    .toNumber();
+    return new BigNumber(bigNum)
+        .times(BigNumber(10).pow(decimals))
+        .integerValue(BigNumber.ROUND_DOWN)
+        .div(BigNumber(10).pow(decimals))
+        .toNumber();
 }
 
 /** Use MultiCall Contract */
 async function useMultiCall(queryArray) {
-  const multiCallABI = require('./build/contracts/Multicall.abi.json');
-  const multiCallContract = new web3.eth.Contract(multiCallABI, multiCall);
-  const { returnData } = await multiCallContract.methods.aggregate(queryArray).call();
-  return returnData;
+    const multiCallABI = require('./build/contracts/Multicall.abi.json');
+    const multiCallContract = new web3.eth.Contract(multiCallABI, multiCall);
+    const { returnData } = await multiCallContract.methods.aggregate(queryArray).call();
+    return returnData;
 }
 
 /** Display ETH account balance */
 async function printETHBalance({ address, name }) {
-  const checkBalance = new BigNumber(await web3.eth.getBalance(address)).div(BigNumber(10).pow(18));
-  console.log(`${name} balance is`, rmDecimalBN(checkBalance), `${netSymbol}`);
+    const checkBalance = new BigNumber(await web3.eth.getBalance(address)).div(BigNumber(10).pow(18));
+    console.log(`${name} balance is`, rmDecimalBN(checkBalance), `${netSymbol}`);
 }
 
 /** Display ERC20 account balance */
 async function printERC20Balance({ address, name, tokenAddress }) {
-  let tokenDecimals, tokenBalance, tokenName, tokenSymbol;
-  const erc20ContractJson = require('./build/contracts/ERC20Mock.json');
-  erc20 = tokenAddress ? new web3.eth.Contract(erc20ContractJson.abi, tokenAddress) : erc20;
-  if (!isTestRPC && !multiCall) {
-    const tokenCall = await useMultiCall([
-      [tokenAddress, erc20.methods.balanceOf(address).encodeABI()],
-      [tokenAddress, erc20.methods.decimals().encodeABI()],
-      [tokenAddress, erc20.methods.name().encodeABI()],
-      [tokenAddress, erc20.methods.symbol().encodeABI()]
-    ]);
-    tokenDecimals = parseInt(tokenCall[1]);
-    tokenBalance = new BigNumber(tokenCall[0]).div(BigNumber(10).pow(tokenDecimals));
-    tokenName = web3.eth.abi.decodeParameter('string', tokenCall[2]);
-    tokenSymbol = web3.eth.abi.decodeParameter('string', tokenCall[3]);
-  } else {
-    tokenDecimals = await erc20.methods.decimals().call();
-    tokenBalance = new BigNumber(await erc20.methods.balanceOf(address).call()).div(BigNumber(10).pow(tokenDecimals));
-    tokenName = await erc20.methods.name().call();
-    tokenSymbol = await erc20.methods.symbol().call();
-  }
-  console.log(`${name}`, tokenName, `Balance is`, rmDecimalBN(tokenBalance), tokenSymbol);
+    let tokenDecimals, tokenBalance, tokenName, tokenSymbol;
+    const erc20ContractJson = require('./build/contracts/ERC20Mock.json');
+    erc20 = tokenAddress ? new web3.eth.Contract(erc20ContractJson.abi, tokenAddress) : erc20;
+    if (!isTestRPC && !multiCall) {
+        const tokenCall = await useMultiCall([
+            [tokenAddress, erc20.methods.balanceOf(address).encodeABI()],
+            [tokenAddress, erc20.methods.decimals().encodeABI()],
+            [tokenAddress, erc20.methods.name().encodeABI()],
+            [tokenAddress, erc20.methods.symbol().encodeABI()]
+        ]);
+        tokenDecimals = parseInt(tokenCall[1]);
+        tokenBalance = new BigNumber(tokenCall[0]).div(BigNumber(10).pow(tokenDecimals));
+        tokenName = web3.eth.abi.decodeParameter('string', tokenCall[2]);
+        tokenSymbol = web3.eth.abi.decodeParameter('string', tokenCall[3]);
+    } else {
+        tokenDecimals = await erc20.methods.decimals().call();
+        tokenBalance = new BigNumber(await erc20.methods.balanceOf(address).call()).div(BigNumber(10).pow(tokenDecimals));
+        tokenName = await erc20.methods.name().call();
+        tokenSymbol = await erc20.methods.symbol().call();
+    }
+    console.log(`${name}`, tokenName, `Balance is`, rmDecimalBN(tokenBalance), tokenSymbol);
 }
 
 /**
@@ -119,13 +119,13 @@ async function printERC20Balance({ address, name, tokenAddress }) {
  * @returns {String} treeData.root Merkle tree root
  */
 function computeDepositEventsTree(depositEvents) {
-  const leaves = depositEvents
-    .sort((a, b) => a.leafIndex - b.leafIndex) // Sort events in chronological order
-    .map((e) => toBN(e.commitment).toString(10)); // Leaf = commitment pedersen hash of deposit
+    const leaves = depositEvents
+        .sort((a, b) => a.leafIndex - b.leafIndex) // Sort events in chronological order
+        .map((e) => toBN(e.commitment).toString(10)); // Leaf = commitment pedersen hash of deposit
 
-  console.log('Computing deposit events merkle tree and its root');
-  const tree = new merkleTree(MERKLE_TREE_HEIGHT, leaves);
-  return { leaves, tree, root: tree.root() };
+    console.log('Computing deposit events merkle tree and its root');
+    const tree = new merkleTree(MERKLE_TREE_HEIGHT, leaves);
+    return { leaves, tree, root: tree.root() };
 }
 
 /**
@@ -136,149 +136,149 @@ function computeDepositEventsTree(depositEvents) {
  * @throws {Error}
  */
 async function isRootValid(depositEvents) {
-  const { root } = computeDepositEventsTree(depositEvents);
-  const isRootValid = await tornadoContract.methods.isKnownRoot(toHex(root)).call();
+    const { root } = computeDepositEventsTree(depositEvents);
+    const isRootValid = await tornadoContract.methods.isKnownRoot(toHex(root)).call();
 
-  return isRootValid;
+    return isRootValid;
 }
 
 async function submitTransaction(signedTX) {
-  console.log('Submitting transaction to the remote node');
-  await web3.eth
-    .sendSignedTransaction(signedTX)
-    .on('transactionHash', function (txHash) {
-      console.log(`View transaction on block explorer https://${getExplorerLink()}/tx/${txHash}`);
-    })
-    .on('error', function (e) {
-      console.error('on transactionHash error', e.message);
-    });
+    console.log('Submitting transaction to the remote node');
+    await web3.eth
+        .sendSignedTransaction(signedTX)
+        .on('transactionHash', function(txHash) {
+            console.log(`View transaction on block explorer https://${getExplorerLink()}/tx/${txHash}`);
+        })
+        .on('error', function(e) {
+            console.error('on transactionHash error', e.message);
+        });
 }
 
 async function generateTransaction(to, encodedData, value = 0) {
-  const nonce = await web3.eth.getTransactionCount(senderAccount);
-  let gasPrice = await fetchGasPrice();
-  let gasLimit;
+    const nonce = await web3.eth.getTransactionCount(senderAccount);
+    let gasPrice = await fetchGasPrice();
+    let gasLimit;
 
-  async function estimateGas() {
-    const fetchedGas = await web3.eth.estimateGas({
-      from: senderAccount,
-      to: to,
-      value: value,
-      nonce: nonce,
-      data: encodedData
-    });
-    const bumped = Math.floor(fetchedGas * 1.3);
-    return web3.utils.toHex(bumped);
-  }
-
-  if (encodedData) {
-    gasLimit = await estimateGas();
-  } else {
-    gasLimit = web3.utils.toHex(23000);
-  }
-
-  const isNumRString = typeof value == 'string' || typeof value == 'number';
-  const valueCost = isNumRString ? toBN(value) : value;
-  const gasCosts = toBN(gasPrice).mul(toBN(gasLimit));
-  const totalCosts = valueCost.add(gasCosts);
-
-  /** Transaction details */
-  console.log('Gas price: ', web3.utils.hexToNumber(gasPrice));
-  console.log('Gas limit: ', web3.utils.hexToNumber(gasLimit));
-  console.log('Transaction fee: ', rmDecimalBN(fromWei(gasCosts), 12), `${netSymbol}`);
-  console.log('Transaction cost: ', rmDecimalBN(fromWei(totalCosts), 12), `${netSymbol}`);
-  /** ----------------------------------------- **/
-
-  function txoptions() {
-    // Generate EIP-1559 transaction
-    if (netId == 1) {
-      return {
-        to: to,
-        value: value,
-        nonce: nonce,
-        maxFeePerGas: gasPrice,
-        maxPriorityFeePerGas: web3.utils.toHex(web3.utils.toWei('3', 'gwei')),
-        gas: gasLimit,
-        data: encodedData
-      };
-    } else if (netId == 5 || netId == 137 || netId == 43114) {
-      return {
-        to: to,
-        value: value,
-        nonce: nonce,
-        maxFeePerGas: gasPrice,
-        maxPriorityFeePerGas: gasPrice,
-        gas: gasLimit,
-        data: encodedData
-      };
-    } else {
-      return {
-        to: to,
-        value: value,
-        nonce: nonce,
-        gasPrice: gasPrice,
-        gas: gasLimit,
-        data: encodedData
-      };
+    async function estimateGas() {
+        const fetchedGas = await web3.eth.estimateGas({
+            from: senderAccount,
+            to: to,
+            value: value,
+            nonce: nonce,
+            data: encodedData
+        });
+        const bumped = Math.floor(fetchedGas * 1.3);
+        return web3.utils.toHex(bumped);
     }
-  }
 
-  if (shouldPromptConfirmation) {
-    await promptConfirmation();
-  }
+    if (encodedData) {
+        gasLimit = await estimateGas();
+    } else {
+        gasLimit = web3.utils.toHex(23000);
+    }
 
-  const tx = txoptions();
-  const signed = await web3.eth.accounts.signTransaction(tx, PRIVATE_KEY);
+    const isNumRString = typeof value == 'string' || typeof value == 'number';
+    const valueCost = isNumRString ? toBN(value) : value;
+    const gasCosts = toBN(gasPrice).mul(toBN(gasLimit));
+    const totalCosts = valueCost.add(gasCosts);
 
-  if (!doNotSubmitTx) {
-    await submitTransaction(signed.rawTransaction);
-  } else {
-    console.log('\n=============Raw TX=================', '\n');
-    console.log(
-      `Please submit this raw tx to https://${getExplorerLink()}/pushTx, or otherwise broadcast with node cli.js broadcast command.`,
-      `\n`
-    );
-    console.log(signed.rawTransaction, `\n`);
-    console.log('=====================================', '\n');
-  }
+    /** Transaction details */
+    console.log('Gas price: ', web3.utils.hexToNumber(gasPrice));
+    console.log('Gas limit: ', web3.utils.hexToNumber(gasLimit));
+    console.log('Transaction fee: ', rmDecimalBN(fromWei(gasCosts), 12), `${netSymbol}`);
+    console.log('Transaction cost: ', rmDecimalBN(fromWei(totalCosts), 12), `${netSymbol}`);
+    /** ----------------------------------------- **/
+
+    function txoptions() {
+        // Generate EIP-1559 transaction
+        if (netId == 1) {
+            return {
+                to: to,
+                value: value,
+                nonce: nonce,
+                maxFeePerGas: gasPrice,
+                maxPriorityFeePerGas: web3.utils.toHex(web3.utils.toWei('3', 'gwei')),
+                gas: gasLimit,
+                data: encodedData
+            };
+        } else if (netId == 5 || netId == 137 || netId == 43114) {
+            return {
+                to: to,
+                value: value,
+                nonce: nonce,
+                maxFeePerGas: gasPrice,
+                maxPriorityFeePerGas: gasPrice,
+                gas: gasLimit,
+                data: encodedData
+            };
+        } else {
+            return {
+                to: to,
+                value: value,
+                nonce: nonce,
+                gasPrice: gasPrice,
+                gas: gasLimit,
+                data: encodedData
+            };
+        }
+    }
+
+    if (shouldPromptConfirmation) {
+        await promptConfirmation();
+    }
+
+    const tx = txoptions();
+    const signed = await web3.eth.accounts.signTransaction(tx, PRIVATE_KEY);
+
+    if (!doNotSubmitTx) {
+        await submitTransaction(signed.rawTransaction);
+    } else {
+        console.log('\n=============Raw TX=================', '\n');
+        console.log(
+            `Please submit this raw tx to https://${getExplorerLink()}/pushTx, or otherwise broadcast with node cli.js broadcast command.`,
+            `\n`
+        );
+        console.log(signed.rawTransaction, `\n`);
+        console.log('=====================================', '\n');
+    }
 }
 
 /**
  * Create deposit object from secret and nullifier
  */
 function createDeposit({ nullifier, secret }) {
-  const deposit = { nullifier, secret };
-  deposit.preimage = Buffer.concat([deposit.nullifier.leInt2Buff(31), deposit.secret.leInt2Buff(31)]);
-  deposit.commitment = pedersenHash(deposit.preimage);
-  deposit.commitmentHex = toHex(deposit.commitment);
-  deposit.nullifierHash = pedersenHash(deposit.nullifier.leInt2Buff(31));
-  deposit.nullifierHex = toHex(deposit.nullifierHash);
-  return deposit;
+    const deposit = { nullifier, secret };
+    deposit.preimage = Buffer.concat([deposit.nullifier.leInt2Buff(31), deposit.secret.leInt2Buff(31)]);
+    deposit.commitment = pedersenHash(deposit.preimage);
+    deposit.commitmentHex = toHex(deposit.commitment);
+    deposit.nullifierHash = pedersenHash(deposit.nullifier.leInt2Buff(31));
+    deposit.nullifierHex = toHex(deposit.nullifierHash);
+    return deposit;
 }
 
 async function backupNote({ currency, amount, netId, note, noteString }) {
-  try {
-    await fs.writeFileSync(`./backup-tornado-${currency}-${amount}-${netId}-${note.slice(0, 10)}.txt`, noteString, 'utf8');
-    console.log('Backed up deposit note as', `./backup-tornado-${currency}-${amount}-${netId}-${note.slice(0, 10)}.txt`);
-  } catch (e) {
-    throw new Error('Writing backup note failed:', e);
-  }
+    try {
+        await fs.writeFileSync(`./backup-tornado-${currency}-${amount}-${netId}-${note.slice(0, 10)}.txt`, noteString, 'utf8');
+        console.log('Backed up deposit note as', `./backup-tornado-${currency}-${amount}-${netId}-${note.slice(0, 10)}.txt`);
+    } catch (e) {
+        throw new Error('Writing backup note failed:', e);
+    }
 }
 
 async function backupInvoice({ currency, amount, netId, commitmentNote, invoiceString }) {
-  try {
-    await fs.writeFileSync(
-      `./backup-tornadoInvoice-${currency}-${amount}-${netId}-${commitmentNote.slice(0, 10)}.txt`,
-      invoiceString,
-      'utf8'
-    );
-    console.log(
-      'Backed up invoice as',
-      `./backup-tornadoInvoice-${currency}-${amount}-${netId}-${commitmentNote.slice(0, 10)}.txt`
-    );
-  } catch (e) {
-    throw new Error('Writing backup invoice failed:', e);
-  }
+    try {
+        await fs.writeFileSync(
+            `./backup-tornadoInvoice-${currency}-${amount}-${netId}-${commitmentNote.slice(0, 10)}.txt`,
+            invoiceString,
+            'utf8'
+        );
+        console.log(
+            'Backed up invoice as',
+            `./backup-tornadoInvoice-${currency}-${amount}-${netId}-${commitmentNote.slice(0, 10)}.txt`
+        );
+    } catch (e) {
+        throw new Error('Writing backup invoice failed:', e);
+    }
 }
 
 /**
@@ -287,22 +287,22 @@ async function backupInvoice({ currency, amount, netId, commitmentNote, invoiceS
  * @param amount Deposit amount
  */
 async function createInvoice({ currency, amount, chainId }) {
-  const deposit = createDeposit({
-    nullifier: rbigint(31),
-    secret: rbigint(31)
-  });
-  const note = toHex(deposit.preimage, 62);
-  const noteString = `tornado-${currency}-${amount}-${chainId}-${note}`;
-  console.log(`Your note: ${noteString}`);
+    const deposit = createDeposit({
+        nullifier: rbigint(31),
+        secret: rbigint(31)
+    });
+    const note = toHex(deposit.preimage, 62);
+    const noteString = `tornado-${currency}-${amount}-${chainId}-${note}`;
+    console.log(`Your note: ${noteString}`);
 
-  const commitmentNote = toHex(deposit.commitment);
-  const invoiceString = `tornadoInvoice-${currency}-${amount}-${chainId}-${commitmentNote}`;
-  console.log(`Your invoice for deposit: ${invoiceString}`);
+    const commitmentNote = toHex(deposit.commitment);
+    const invoiceString = `tornadoInvoice-${currency}-${amount}-${chainId}-${commitmentNote}`;
+    console.log(`Your invoice for deposit: ${invoiceString}`);
 
-  await backupNote({ currency, amount, netId: chainId, note, noteString });
-  await backupInvoice({ currency, amount, netId: chainId, commitmentNote, invoiceString });
+    await backupNote({ currency, amount, netId: chainId, note, noteString });
+    await backupInvoice({ currency, amount, netId: chainId, commitmentNote, invoiceString });
 
-  return noteString, invoiceString;
+    return noteString, invoiceString;
 }
 
 /**
@@ -311,58 +311,58 @@ async function createInvoice({ currency, amount, chainId }) {
  * @param amount Deposit amount
  */
 async function deposit({ currency, amount, commitmentNote }) {
-  assert(senderAccount != null, 'Error! PRIVATE_KEY not found. Please provide PRIVATE_KEY in .env file if you deposit');
-  let commitment, noteString;
-  if (!commitmentNote) {
-    console.log('Creating new random deposit note');
-    const deposit = createDeposit({
-      nullifier: rbigint(31),
-      secret: rbigint(31)
-    });
-    const note = toHex(deposit.preimage, 62);
-    noteString = `tornado-${currency}-${amount}-${netId}-${note}`;
-    console.log(`Your note: ${noteString}`);
-    await backupNote({ currency, amount, netId, note, noteString });
-    commitment = toHex(deposit.commitment);
-  } else {
-    console.log('Using supplied invoice for deposit');
-    commitment = toHex(commitmentNote);
-  }
-  if (currency === netSymbol.toLowerCase()) {
-    await printETHBalance({ address: tornadoContract._address, name: 'Tornado contract' });
-    await printETHBalance({ address: senderAccount, name: 'Sender account' });
-    const value = isTestRPC ? ETH_AMOUNT : fromDecimals({ amount, decimals: 18 });
-    console.log('Submitting deposit transaction');
-    await generateTransaction(contractAddress, tornado.methods.deposit(tornadoInstance, commitment, []).encodeABI(), value);
-    await printETHBalance({ address: tornadoContract._address, name: 'Tornado contract' });
-    await printETHBalance({ address: senderAccount, name: 'Sender account' });
-  } else {
-    // a token
-    await printERC20Balance({ address: tornadoContract._address, name: 'Tornado contract' });
-    await printERC20Balance({ address: senderAccount, name: 'Sender account' });
-    const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
-    const tokenAmount = isTestRPC ? TOKEN_AMOUNT : fromDecimals({ amount, decimals });
-    if (isTestRPC) {
-      console.log('Minting some test tokens to deposit');
-      await generateTransaction(erc20Address, erc20.methods.mint(senderAccount, tokenAmount).encodeABI());
+    assert(senderAccount != null, 'Error! PRIVATE_KEY not found. Please provide PRIVATE_KEY in .env file if you deposit');
+    let commitment, noteString;
+    if (!commitmentNote) {
+        console.log('Creating new random deposit note');
+        const deposit = createDeposit({
+            nullifier: rbigint(31),
+            secret: rbigint(31)
+        });
+        const note = toHex(deposit.preimage, 62);
+        noteString = `tornado-${currency}-${amount}-${netId}-${note}`;
+        console.log(`Your note: ${noteString}`);
+        await backupNote({ currency, amount, netId, note, noteString });
+        commitment = toHex(deposit.commitment);
+    } else {
+        console.log('Using supplied invoice for deposit');
+        commitment = toHex(commitmentNote);
+    }
+    if (currency === netSymbol.toLowerCase()) {
+        await printETHBalance({ address: tornadoContract._address, name: 'Tornado contract' });
+        await printETHBalance({ address: senderAccount, name: 'Sender account' });
+        const value = isTestRPC ? ETH_AMOUNT : fromDecimals({ amount, decimals: 18 });
+        console.log('Submitting deposit transaction');
+        await generateTransaction(contractAddress, tornado.methods.deposit(tornadoInstance, commitment, []).encodeABI(), value);
+        await printETHBalance({ address: tornadoContract._address, name: 'Tornado contract' });
+        await printETHBalance({ address: senderAccount, name: 'Sender account' });
+    } else {
+        // a token
+        await printERC20Balance({ address: tornadoContract._address, name: 'Tornado contract' });
+        await printERC20Balance({ address: senderAccount, name: 'Sender account' });
+        const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
+        const tokenAmount = isTestRPC ? TOKEN_AMOUNT : fromDecimals({ amount, decimals });
+        if (isTestRPC) {
+            console.log('Minting some test tokens to deposit');
+            await generateTransaction(erc20Address, erc20.methods.mint(senderAccount, tokenAmount).encodeABI());
+        }
+
+        const allowance = await erc20.methods.allowance(senderAccount, tornado._address).call({ from: senderAccount });
+        console.log('Current allowance is', fromWei(allowance));
+        if (toBN(allowance).lt(toBN(tokenAmount))) {
+            console.log('Approving tokens for deposit');
+            await generateTransaction(erc20Address, erc20.methods.approve(tornado._address, tokenAmount).encodeABI());
+        }
+
+        console.log('Submitting deposit transaction');
+        await generateTransaction(contractAddress, tornado.methods.deposit(tornadoInstance, commitment, []).encodeABI());
+        await printERC20Balance({ address: tornadoContract._address, name: 'Tornado contract' });
+        await printERC20Balance({ address: senderAccount, name: 'Sender account' });
     }
 
-    const allowance = await erc20.methods.allowance(senderAccount, tornado._address).call({ from: senderAccount });
-    console.log('Current allowance is', fromWei(allowance));
-    if (toBN(allowance).lt(toBN(tokenAmount))) {
-      console.log('Approving tokens for deposit');
-      await generateTransaction(erc20Address, erc20.methods.approve(tornado._address, tokenAmount).encodeABI());
+    if (!commitmentNote) {
+        return noteString;
     }
-
-    console.log('Submitting deposit transaction');
-    await generateTransaction(contractAddress, tornado.methods.deposit(tornadoInstance, commitment, []).encodeABI());
-    await printERC20Balance({ address: tornadoContract._address, name: 'Tornado contract' });
-    await printERC20Balance({ address: senderAccount, name: 'Sender account' });
-  }
-
-  if (!commitmentNote) {
-    return noteString;
-  }
 }
 
 /**
@@ -372,31 +372,31 @@ async function deposit({ currency, amount, commitmentNote }) {
  * @param deposit Deposit object
  */
 async function generateMerkleProof(deposit, currency, amount) {
-  // Get all deposit events from smart contract and assemble merkle tree from them
-  const cachedEvents = await fetchEvents({ type: 'deposit', currency, amount });
-  const { tree, leaves, root } = computeDepositEventsTree(cachedEvents);
-  // Validate that merkle tree is valid, deposit data is correct and note not spent.
-  const leafIndex = leaves.findIndex((commitment) => toBN(deposit.commitmentHex).toString(10) === commitment);
-  console.log('debug->leafIndex', leafIndex)
-  let isValidRoot, isSpent;
-  if (!isTestRPC && !multiCall) {
-    const callContract = await useMultiCall([
-      [tornadoContract._address, tornadoContract.methods.isKnownRoot(toHex(root)).encodeABI()],
-      [tornadoContract._address, tornadoContract.methods.isSpent(toHex(deposit.nullifierHash)).encodeABI()]
-    ]);
-    isValidRoot = web3.eth.abi.decodeParameter('bool', callContract[0]);
-    isSpent = web3.eth.abi.decodeParameter('bool', callContract[1]);
-  } else {
-    isValidRoot = await tornadoContract.methods.isKnownRoot(toHex(root)).call();
-    isSpent = await tornadoContract.methods.isSpent(toHex(deposit.nullifierHash)).call();
-  }
-  assert(isValidRoot === true, 'Merkle tree is corrupted');
-  assert(isSpent === false, 'The note is already spent');
-  assert(leafIndex >= 0, 'The deposit is not found in the tree');
+    // Get all deposit events from smart contract and assemble merkle tree from them
+    const cachedEvents = await fetchEvents({ type: 'deposit', currency, amount });
+    const { tree, leaves, root } = computeDepositEventsTree(cachedEvents);
+    // Validate that merkle tree is valid, deposit data is correct and note not spent.
+    const leafIndex = leaves.findIndex((commitment) => toBN(deposit.commitmentHex).toString(10) === commitment);
+    console.log('debug->leafIndex', leafIndex)
+    let isValidRoot, isSpent;
+    if (!isTestRPC && !multiCall) {
+        const callContract = await useMultiCall([
+            [tornadoContract._address, tornadoContract.methods.isKnownRoot(toHex(root)).encodeABI()],
+            [tornadoContract._address, tornadoContract.methods.isSpent(toHex(deposit.nullifierHash)).encodeABI()]
+        ]);
+        isValidRoot = web3.eth.abi.decodeParameter('bool', callContract[0]);
+        isSpent = web3.eth.abi.decodeParameter('bool', callContract[1]);
+    } else {
+        isValidRoot = await tornadoContract.methods.isKnownRoot(toHex(root)).call();
+        isSpent = await tornadoContract.methods.isSpent(toHex(deposit.nullifierHash)).call();
+    }
+    assert(isValidRoot === true, 'Merkle tree is corrupted');
+    assert(isSpent === false, 'The note is already spent');
+    assert(leafIndex >= 0, 'The deposit is not found in the tree');
 
-  // Compute merkle proof of our commitment
-  const { pathElements, pathIndices } = tree.path(leafIndex);
-  return { root, pathElements, pathIndices };
+    // Compute merkle proof of our commitment
+    const { pathElements, pathIndices } = tree.path(leafIndex);
+    return { root, pathElements, pathIndices };
 }
 
 /**
@@ -408,42 +408,42 @@ async function generateMerkleProof(deposit, currency, amount) {
  * @param refund Receive ether for exchanged tokens
  */
 async function generateProof({ deposit, currency, amount, recipient, relayerAddress = 0, fee = 0, refund = 0 }) {
-  // Compute merkle proof of our commitment
-  const { root, pathElements, pathIndices } = await generateMerkleProof(deposit, currency, amount);
+    // Compute merkle proof of our commitment
+    const { root, pathElements, pathIndices } = await generateMerkleProof(deposit, currency, amount);
 
-  // Prepare circuit input
-  const input = {
-    // Public snark inputs
-    root: root,
-    nullifierHash: deposit.nullifierHash,
-    recipient: bigInt(recipient),
-    relayer: bigInt(relayerAddress),
-    fee: bigInt(fee),
-    refund: bigInt(refund),
+    // Prepare circuit input
+    const input = {
+        // Public snark inputs
+        root: root,
+        nullifierHash: deposit.nullifierHash,
+        recipient: bigInt(recipient),
+        relayer: bigInt(relayerAddress),
+        fee: bigInt(fee),
+        refund: bigInt(refund),
 
-    // Private snark inputs
-    nullifier: deposit.nullifier,
-    secret: deposit.secret,
-    pathElements: pathElements,
-    pathIndices: pathIndices
-  };
+        // Private snark inputs
+        nullifier: deposit.nullifier,
+        secret: deposit.secret,
+        pathElements: pathElements,
+        pathIndices: pathIndices
+    };
 
-  console.log('Generating SNARK proof');
-  console.time('Proof time');
-  const proofData = await websnarkUtils.genWitnessAndProve(groth16, input, circuit, proving_key);
-  const { proof } = websnarkUtils.toSolidityInput(proofData);
-  console.timeEnd('Proof time');
+    console.log('Generating SNARK proof');
+    console.time('Proof time');
+    const proofData = await websnarkUtils.genWitnessAndProve(groth16, input, circuit, proving_key);
+    const { proof } = websnarkUtils.toSolidityInput(proofData);
+    console.timeEnd('Proof time');
 
-  const args = [
-    toHex(input.root),
-    toHex(input.nullifierHash),
-    toHex(input.recipient, 20),
-    toHex(input.relayer, 20),
-    toHex(input.fee),
-    toHex(input.refund)
-  ];
+    const args = [
+        toHex(input.root),
+        toHex(input.nullifierHash),
+        toHex(input.recipient, 20),
+        toHex(input.relayer, 20),
+        toHex(input.fee),
+        toHex(input.refund)
+    ];
 
-  return { proof, args };
+    return { proof, args };
 }
 
 /**
@@ -452,126 +452,125 @@ async function generateProof({ deposit, currency, amount, recipient, relayerAddr
  * @param recipient Recipient address
  */
 async function withdraw({ deposit, currency, amount, recipient, relayerURL, refund = '0' }) {
-  let options = {};
-  if (currency === netSymbol.toLowerCase() && refund !== '0') {
-    throw new Error('The ETH purchase is supposted to be 0 for ETH withdrawals');
-  }
-
-  if (!web3.utils.isAddress(recipient)) {
-    throw new Error('Recipient address is not valid');
-  }
-
-  refund = toWei(refund);
-  if (relayerURL) {
-    if (relayerURL.endsWith('.eth')) {
-      throw new Error(
-        'ENS name resolving is not supported. Please provide DNS name of the relayer. See instuctions in README.md'
-      );
-    }
-    if (torPort) {
-      options = {
-        httpsAgent: new SocksProxyAgent('socks5h://127.0.0.1:' + torPort),
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0' }
-      };
-    }
-    const relayerStatus = await axios.get(relayerURL + '/status', options);
-
-    const { rewardAccount, netId, ethPrices, tornadoServiceFee } = relayerStatus.data;
-    assert(netId === (await web3.eth.net.getId()) || netId === '*', 'This relay is for different network');
-    console.log('Relay address:', rewardAccount);
-
-    const gasPrice = await fetchGasPrice();
-
-    const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
-    const fee = calculateFee({
-      currency,
-      gasPrice,
-      amount,
-      refund,
-      ethPrices,
-      relayerServiceFee: tornadoServiceFee,
-      decimals
-    });
-    // let fee
-    // if (currency === 'hex') {
-    //   fee = BigInt(amount * 2 * 10 ** 6)
-    // } else {
-    //   fee = BigInt(amount * 2 * 10 ** 16)
-    // }
-    if (fee.gt(fromDecimals({ amount, decimals }))) {
-      throw new Error('Too high refund');
+    let options = {};
+    if (currency === netSymbol.toLowerCase() && refund !== '0') {
+        throw new Error('The ETH purchase is supposted to be 0 for ETH withdrawals');
     }
 
-    const { proof, args } = await generateProof({
-      deposit,
-      currency,
-      amount,
-      recipient,
-      relayerAddress: rewardAccount,
-      fee,
-      refund
-    });
-
-    console.log('Sending withdraw transaction through relay');
-
-    const gasCosts = toBN(gasPrice).mul(toBN(340000));
-    const totalCosts = fee.add(gasCosts);
-
-    console.log('debug->gasCosts', gasCosts, fee, totalCosts)
-    /** Relayer fee details **/
-    console.log('Transaction fee: ', rmDecimalBN(fromWei(gasCosts), 12), `${netSymbol}`);
-    console.log('Relayer fee: ', rmDecimalBN(fromWei(fee), 12), `${netSymbol}`);
-    console.log('Total fees: ', rmDecimalBN(fromWei(totalCosts), 12), `${netSymbol}`);
-    /** -------------------- **/
-
-    if (shouldPromptConfirmation) {
-      await promptConfirmation();
+    if (!web3.utils.isAddress(recipient)) {
+        throw new Error('Recipient address is not valid');
     }
 
-    try {
-      const response = await axios.post(
-        relayerURL + '/v1/tornadoWithdraw',
-        {
-          contract: tornadoInstance,
-          proof,
-          args
-        },
-        options
-      );
+    refund = toWei(refund);
+    if (relayerURL) {
+        if (relayerURL.endsWith('.eth')) {
+            throw new Error(
+                'ENS name resolving is not supported. Please provide DNS name of the relayer. See instuctions in README.md'
+            );
+        }
+        if (torPort) {
+            options = {
+                httpsAgent: new SocksProxyAgent('socks5h://127.0.0.1:' + torPort),
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0' }
+            };
+        }
+        const relayerStatus = await axios.get(relayerURL + '/status', options);
 
-      const { id } = response.data;
+        const { rewardAccount, netId, ethPrices, tornadoServiceFee } = relayerStatus.data;
+        assert(netId === (await web3.eth.net.getId()) || netId === '*', 'This relay is for different network');
+        console.log('Relay address:', rewardAccount);
 
-      const result = await getStatus(id, relayerURL, options);
-      console.log('STATUS', result);
-    } catch (e) {
-      if (e.response) {
-        console.error(e.response.data.error);
-      } else {
-        console.error(e.message);
-      }
+        const gasPrice = await fetchGasPrice();
+
+        const decimals = isTestRPC ? 18 : config.deployments[`netId${netId}`][currency].decimals;
+        const fee = calculateFee({
+            currency,
+            gasPrice,
+            amount,
+            refund,
+            ethPrices,
+            relayerServiceFee: tornadoServiceFee,
+            decimals
+        });
+        // let fee
+        // if (currency === 'hex') {
+        //   fee = BigInt(amount * 2 * 10 ** 6)
+        // } else {
+        //   fee = BigInt(amount * 2 * 10 ** 16)
+        // }
+        if (fee.gt(fromDecimals({ amount, decimals }))) {
+            throw new Error('Too high refund');
+        }
+
+        const { proof, args } = await generateProof({
+            deposit,
+            currency,
+            amount,
+            recipient,
+            relayerAddress: rewardAccount,
+            fee,
+            refund
+        });
+
+        console.log('Sending withdraw transaction through relay');
+
+        const gasCosts = toBN(gasPrice).mul(toBN(340000));
+        const totalCosts = fee.add(gasCosts);
+
+        console.log('debug->gasCosts', gasCosts, fee, totalCosts)
+            /** Relayer fee details **/
+        console.log('Transaction fee: ', rmDecimalBN(fromWei(gasCosts), 12), `${netSymbol}`);
+        console.log('Relayer fee: ', rmDecimalBN(fromWei(fee), 12), `${netSymbol}`);
+        console.log('Total fees: ', rmDecimalBN(fromWei(totalCosts), 12), `${netSymbol}`);
+        /** -------------------- **/
+
+        if (shouldPromptConfirmation) {
+            await promptConfirmation();
+        }
+
+        try {
+            const response = await axios.post(
+                relayerURL + '/v1/tornadoWithdraw', {
+                    contract: tornadoInstance,
+                    proof,
+                    args
+                },
+                options
+            );
+
+            const { id } = response.data;
+
+            const result = await getStatus(id, relayerURL, options);
+            console.log('STATUS', result);
+        } catch (e) {
+            if (e.response) {
+                console.error(e.response.data.error);
+            } else {
+                console.error(e.message);
+            }
+        }
+    } else {
+        // using private key
+
+        // check if the address of recepient matches with the account of provided private key from environment to prevent accidental use of deposit address for withdrawal transaction.
+        assert(
+            recipient.toLowerCase() == senderAccount.toLowerCase(),
+            'Withdrawal recepient mismatches with the account of provided private key from environment file'
+        );
+        const checkBalance = await web3.eth.getBalance(senderAccount);
+        assert(checkBalance !== 0, 'You have 0 balance, make sure to fund account by withdrawing from tornado using relayer first');
+
+        const { proof, args } = await generateProof({ deposit, currency, amount, recipient, refund });
+
+        console.log('Submitting withdraw transaction');
+        await generateTransaction(contractAddress, tornado.methods.withdraw(tornadoInstance, proof, ...args).encodeABI());
     }
-  } else {
-    // using private key
-
-    // check if the address of recepient matches with the account of provided private key from environment to prevent accidental use of deposit address for withdrawal transaction.
-    assert(
-      recipient.toLowerCase() == senderAccount.toLowerCase(),
-      'Withdrawal recepient mismatches with the account of provided private key from environment file'
-    );
-    const checkBalance = await web3.eth.getBalance(senderAccount);
-    assert(checkBalance !== 0, 'You have 0 balance, make sure to fund account by withdrawing from tornado using relayer first');
-
-    const { proof, args } = await generateProof({ deposit, currency, amount, recipient, refund });
-
-    console.log('Submitting withdraw transaction');
-    await generateTransaction(contractAddress, tornado.methods.withdraw(tornadoInstance, proof, ...args).encodeABI());
-  }
-  if (currency === netSymbol.toLowerCase()) {
-    await printETHBalance({ address: recipient, name: 'Recipient' });
-  } else {
-    await printERC20Balance({ address: recipient, name: 'Recipient' });
-  }
-  console.log('Done withdrawal from Tornado Cash');
+    if (currency === netSymbol.toLowerCase()) {
+        await printETHBalance({ address: recipient, name: 'Recipient' });
+    } else {
+        await printERC20Balance({ address: recipient, name: 'Recipient' });
+    }
+    console.log('Done withdrawal from Tornado Cash');
 }
 
 /**
@@ -581,177 +580,177 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
  * @param tokenAddress ERC20 token address
  */
 async function send({ address, amount, tokenAddress }) {
-  // using private key
-  assert(senderAccount != null, 'Error! PRIVATE_KEY not found. Please provide PRIVATE_KEY in .env file if you send');
-  if (tokenAddress) {
-    const erc20ContractJson = require('./build/contracts/ERC20Mock.json');
-    erc20 = new web3.eth.Contract(erc20ContractJson.abi, tokenAddress);
-    let tokenBalance, tokenDecimals, tokenSymbol;
-    if (!isTestRPC && !multiCall) {
-      const callToken = await useMultiCall([
-        [tokenAddress, erc20.methods.balanceOf(senderAccount).encodeABI()],
-        [tokenAddress, erc20.methods.decimals().encodeABI()],
-        [tokenAddress, erc20.methods.symbol().encodeABI()]
-      ]);
-      tokenBalance = new BigNumber(callToken[0]);
-      tokenDecimals = parseInt(callToken[1]);
-      tokenSymbol = web3.eth.abi.decodeParameter('string', callToken[2]);
+    // using private key
+    assert(senderAccount != null, 'Error! PRIVATE_KEY not found. Please provide PRIVATE_KEY in .env file if you send');
+    if (tokenAddress) {
+        const erc20ContractJson = require('./build/contracts/ERC20Mock.json');
+        erc20 = new web3.eth.Contract(erc20ContractJson.abi, tokenAddress);
+        let tokenBalance, tokenDecimals, tokenSymbol;
+        if (!isTestRPC && !multiCall) {
+            const callToken = await useMultiCall([
+                [tokenAddress, erc20.methods.balanceOf(senderAccount).encodeABI()],
+                [tokenAddress, erc20.methods.decimals().encodeABI()],
+                [tokenAddress, erc20.methods.symbol().encodeABI()]
+            ]);
+            tokenBalance = new BigNumber(callToken[0]);
+            tokenDecimals = parseInt(callToken[1]);
+            tokenSymbol = web3.eth.abi.decodeParameter('string', callToken[2]);
+        } else {
+            tokenBalance = new BigNumber(await erc20.methods.balanceOf(senderAccount).call());
+            tokenDecimals = await erc20.methods.decimals().call();
+            tokenSymbol = await erc20.methods.symbol().call();
+        }
+        const toSend = new BigNumber(amount).times(BigNumber(10).pow(tokenDecimals));
+        if (tokenBalance.lt(toSend)) {
+            console.error(
+                'You have',
+                rmDecimalBN(tokenBalance.div(BigNumber(10).pow(tokenDecimals))),
+                tokenSymbol,
+                ", you can't send more than you have"
+            );
+            process.exit(1);
+        }
+        const encodeTransfer = erc20.methods.transfer(address, toSend).encodeABI();
+        await generateTransaction(tokenAddress, encodeTransfer);
+        console.log('Sent', amount, tokenSymbol, 'to', address);
     } else {
-      tokenBalance = new BigNumber(await erc20.methods.balanceOf(senderAccount).call());
-      tokenDecimals = await erc20.methods.decimals().call();
-      tokenSymbol = await erc20.methods.symbol().call();
+        const balance = new BigNumber(await web3.eth.getBalance(senderAccount));
+        assert(balance.toNumber() !== 0, "You have 0 balance, can't send transaction");
+        if (amount) {
+            toSend = new BigNumber(amount).times(BigNumber(10).pow(18));
+            if (balance.lt(toSend)) {
+                console.error(
+                    'You have',
+                    rmDecimalBN(balance.div(BigNumber(10).pow(18))),
+                    netSymbol + ", you can't send more than you have."
+                );
+                process.exit(1);
+            }
+        } else {
+            console.log('Amount not defined, sending all available amounts');
+            const gasPrice = new BigNumber(await fetchGasPrice());
+            const gasLimit = new BigNumber(21000);
+            if (netId == 1) {
+                const priorityFee = new BigNumber(await gasPrices(3));
+                toSend = balance.minus(gasLimit.times(gasPrice.plus(priorityFee)));
+            } else {
+                toSend = balance.minus(gasLimit.times(gasPrice));
+            }
+        }
+        await generateTransaction(address, null, toSend);
+        console.log('Sent', rmDecimalBN(toSend.div(BigNumber(10).pow(18))), netSymbol, 'to', address);
     }
-    const toSend = new BigNumber(amount).times(BigNumber(10).pow(tokenDecimals));
-    if (tokenBalance.lt(toSend)) {
-      console.error(
-        'You have',
-        rmDecimalBN(tokenBalance.div(BigNumber(10).pow(tokenDecimals))),
-        tokenSymbol,
-        ", you can't send more than you have"
-      );
-      process.exit(1);
-    }
-    const encodeTransfer = erc20.methods.transfer(address, toSend).encodeABI();
-    await generateTransaction(tokenAddress, encodeTransfer);
-    console.log('Sent', amount, tokenSymbol, 'to', address);
-  } else {
-    const balance = new BigNumber(await web3.eth.getBalance(senderAccount));
-    assert(balance.toNumber() !== 0, "You have 0 balance, can't send transaction");
-    if (amount) {
-      toSend = new BigNumber(amount).times(BigNumber(10).pow(18));
-      if (balance.lt(toSend)) {
-        console.error(
-          'You have',
-          rmDecimalBN(balance.div(BigNumber(10).pow(18))),
-          netSymbol + ", you can't send more than you have."
-        );
-        process.exit(1);
-      }
-    } else {
-      console.log('Amount not defined, sending all available amounts');
-      const gasPrice = new BigNumber(await fetchGasPrice());
-      const gasLimit = new BigNumber(21000);
-      if (netId == 1) {
-        const priorityFee = new BigNumber(await gasPrices(3));
-        toSend = balance.minus(gasLimit.times(gasPrice.plus(priorityFee)));
-      } else {
-        toSend = balance.minus(gasLimit.times(gasPrice));
-      }
-    }
-    await generateTransaction(address, null, toSend);
-    console.log('Sent', rmDecimalBN(toSend.div(BigNumber(10).pow(18))), netSymbol, 'to', address);
-  }
 }
 
 function getStatus(id, relayerURL, options) {
-  return new Promise((resolve) => {
-    async function getRelayerStatus() {
-      const responseStatus = await axios.get(relayerURL + '/v1/jobs/' + id, options);
+    return new Promise((resolve) => {
+        async function getRelayerStatus() {
+            const responseStatus = await axios.get(relayerURL + '/v1/jobs/' + id, options);
 
-      if (responseStatus.status === 200) {
-        const { txHash, status, confirmations, failedReason } = responseStatus.data;
+            if (responseStatus.status === 200) {
+                const { txHash, status, confirmations, failedReason } = responseStatus.data;
 
-        console.log(`Current job status ${status}, confirmations: ${confirmations}`);
+                console.log(`Current job status ${status}, confirmations: ${confirmations}`);
 
-        if (status === 'FAILED') {
-          throw new Error(status + ' failed reason:' + failedReason);
+                if (status === 'FAILED') {
+                    throw new Error(status + ' failed reason:' + failedReason);
+                }
+
+                if (status === 'CONFIRMED') {
+                    const receipt = await waitForTxReceipt({ txHash });
+                    console.log(
+                        `Transaction submitted through the relay. View transaction on block explorer https://${getExplorerLink()}/tx/${txHash}`
+                    );
+                    console.log('Transaction mined in block', receipt.blockNumber);
+                    resolve(status);
+                }
+            }
+
+            setTimeout(() => {
+                getRelayerStatus(id, relayerURL);
+            }, 3000);
         }
 
-        if (status === 'CONFIRMED') {
-          const receipt = await waitForTxReceipt({ txHash });
-          console.log(
-            `Transaction submitted through the relay. View transaction on block explorer https://${getExplorerLink()}/tx/${txHash}`
-          );
-          console.log('Transaction mined in block', receipt.blockNumber);
-          resolve(status);
-        }
-      }
-
-      setTimeout(() => {
-        getRelayerStatus(id, relayerURL);
-      }, 3000);
-    }
-
-    getRelayerStatus();
-  });
+        getRelayerStatus();
+    });
 }
 
 function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 function fromDecimals({ amount, decimals }) {
-  amount = amount.toString();
-  let ether = amount.toString();
-  const base = new BN('10').pow(new BN(decimals));
-  const baseLength = base.toString(10).length - 1 || 1;
+    amount = amount.toString();
+    let ether = amount.toString();
+    const base = new BN('10').pow(new BN(decimals));
+    const baseLength = base.toString(10).length - 1 || 1;
 
-  const negative = ether.substring(0, 1) === '-';
-  if (negative) {
-    ether = ether.substring(1);
-  }
+    const negative = ether.substring(0, 1) === '-';
+    if (negative) {
+        ether = ether.substring(1);
+    }
 
-  if (ether === '.') {
-    throw new Error('[ethjs-unit] while converting number ' + amount + ' to wei, invalid value');
-  }
+    if (ether === '.') {
+        throw new Error('[ethjs-unit] while converting number ' + amount + ' to wei, invalid value');
+    }
 
-  // Split it into a whole and fractional part
-  const comps = ether.split('.');
-  if (comps.length > 2) {
-    throw new Error('[ethjs-unit] while converting number ' + amount + ' to wei,  too many decimal points');
-  }
+    // Split it into a whole and fractional part
+    const comps = ether.split('.');
+    if (comps.length > 2) {
+        throw new Error('[ethjs-unit] while converting number ' + amount + ' to wei,  too many decimal points');
+    }
 
-  let whole = comps[0];
-  let fraction = comps[1];
+    let whole = comps[0];
+    let fraction = comps[1];
 
-  if (!whole) {
-    whole = '0';
-  }
-  if (!fraction) {
-    fraction = '0';
-  }
-  if (fraction.length > baseLength) {
-    throw new Error('[ethjs-unit] while converting number ' + amount + ' to wei, too many decimal places');
-  }
+    if (!whole) {
+        whole = '0';
+    }
+    if (!fraction) {
+        fraction = '0';
+    }
+    if (fraction.length > baseLength) {
+        throw new Error('[ethjs-unit] while converting number ' + amount + ' to wei, too many decimal places');
+    }
 
-  while (fraction.length < baseLength) {
-    fraction += '0';
-  }
+    while (fraction.length < baseLength) {
+        fraction += '0';
+    }
 
-  whole = new BN(whole);
-  fraction = new BN(fraction);
-  let wei = whole.mul(base).add(fraction);
+    whole = new BN(whole);
+    fraction = new BN(fraction);
+    let wei = whole.mul(base).add(fraction);
 
-  if (negative) {
-    wei = wei.mul(negative);
-  }
+    if (negative) {
+        wei = wei.mul(negative);
+    }
 
-  return new BN(wei.toString(10), 10);
+    return new BN(wei.toString(10), 10);
 }
 
 function toDecimals(value, decimals, fixed) {
-  const zero = new BN(0);
-  const negative1 = new BN(-1);
-  decimals = decimals || 18;
-  fixed = fixed || 7;
+    const zero = new BN(0);
+    const negative1 = new BN(-1);
+    decimals = decimals || 18;
+    fixed = fixed || 7;
 
-  value = new BN(value);
-  const negative = value.lt(zero);
-  const base = new BN('10').pow(new BN(decimals));
-  const baseLength = base.toString(10).length - 1 || 1;
+    value = new BN(value);
+    const negative = value.lt(zero);
+    const base = new BN('10').pow(new BN(decimals));
+    const baseLength = base.toString(10).length - 1 || 1;
 
-  if (negative) {
-    value = value.mul(negative1);
-  }
+    if (negative) {
+        value = value.mul(negative1);
+    }
 
-  let fraction = value.mod(base).toString(10);
-  while (fraction.length < baseLength) {
-    fraction = `0${fraction}`;
-  }
-  fraction = fraction.match(/^([0-9]*[1-9]|0)(0*)/)[1];
+    let fraction = value.mod(base).toString(10);
+    while (fraction.length < baseLength) {
+        fraction = `0${fraction}`;
+    }
+    fraction = fraction.match(/^([0-9]*[1-9]|0)(0*)/)[1];
 
-  const whole = value.div(base).toString(10);
-  value = `${whole}${fraction === '0' ? '' : `.${fraction}`}`;
+    const whole = value.div(base).toString(10);
+    value = `${whole}${fraction === '0' ? '' : `.${fraction}`}`;
 
   if (negative) {
     value = `-${value}`;
@@ -1425,9 +1424,9 @@ async function init({ rpc, noteNetId, currency = 'dai', amount = '100', balanceC
 
   if (!isIpPrivate && !rpc.includes('localhost') && !privateRpc) {
     try {
-      // const htmlIPInfo = await axios.get('https://check.torproject.org', ipOptions);
-      // const ip = htmlIPInfo.data.split('Your IP address appears to be:  <strong>').pop().split('</')[0];
-      console.log('Your remote IP address is');
+      const htmlIPInfo = await axios.get('https://check.torproject.org', ipOptions);
+      const ip = htmlIPInfo.data.split('Your IP address appears to be:  <strong>').pop().split('</')[0];
+      console.log('Your remote IP address is', ip);
     } catch (error) {
       console.error('Could not fetch remote IP from check.torproject.org, use VPN if the problem repeats.');
     }

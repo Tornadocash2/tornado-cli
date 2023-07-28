@@ -148,18 +148,7 @@ Sender account balance is x.xxxxxxx ETH
          "Chainnodes":{
              "name": "Chainnodes",
              "url": "https://mainnet.chainnodes.org/d692ae63-0a7e-43e0-9da9-fe4f4cc6c607"
-         }
-      },
-      "relayers": {
-        "0xproxy.eth": {
-            "url": "0xproxy.eth",
-            "name": "0xproxy.eth",
-            "cachedUrl": "http://mainnet.0x0relayer.xyz/"
-        },
-        "0xtornadocash.eth": {
-            "url": "0xtornadocash.eth",
-            "name": "0xtornadocash.eth",
-            "cachedUrl": "http://mainnet-tornado-0xtornadocash-eth.crypto-bot.exchange/"
+
         },
         "available-reliable-relayer.eth": {
             "url": "available-reliable-relayer.eth",

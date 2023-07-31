@@ -377,7 +377,6 @@ async function generateMerkleProof(deposit, currency, amount) {
     const { tree, leaves, root } = computeDepositEventsTree(cachedEvents);
     // Validate that merkle tree is valid, deposit data is correct and note not spent.
     const leafIndex = leaves.findIndex((commitment) => toBN(deposit.commitmentHex).toString(10) === commitment);
-    console.log('debug->leafIndex', leafIndex)
     let isValidRoot, isSpent;
     if (!isTestRPC && !multiCall) {
         const callContract = await useMultiCall([
@@ -517,7 +516,6 @@ async function withdraw({ deposit, currency, amount, recipient, relayerURL, refu
         const gasCosts = toBN(gasPrice).mul(toBN(340000));
         const totalCosts = fee.add(gasCosts);
 
-        console.log('debug->gasCosts', gasCosts, fee, totalCosts)
             /** Relayer fee details **/
         console.log('Transaction fee: ', rmDecimalBN(fromWei(gasCosts), 12), `${netSymbol}`);
         console.log('Relayer fee: ', rmDecimalBN(fromWei(fee), 12), `${netSymbol}`);
@@ -649,14 +647,13 @@ function getStatus(id, relayerURL, options) {
 
             if (responseStatus.status === 200) {
                 const { txHash, status, confirmations, failedReason } = responseStatus.data;
-
                 console.log(`Current job status ${status}, confirmations: ${confirmations}`);
 
                 if (status === 'FAILED') {
                     throw new Error(status + ' failed reason:' + failedReason);
                 }
 
-                if (status === 'CONFIRMED') {
+                if (status === 'CONFIRMED' || Number(confirmations) > 0) {
                     const receipt = await waitForTxReceipt({ txHash });
                     console.log(
                         `Transaction submitted through the relay. View transaction on block explorer https://${getExplorerLink()}/tx/${txHash}`
